@@ -1,4 +1,6 @@
 import numpy as np
+import matplotlib
+from matplotlib import pyplot as plt
 
 class EffectiveArea(object):
     """
@@ -72,9 +74,80 @@ class Calorimeter(object):
         """
 
         mean = number_of_detected_secondaries * energy_per_secondary
+        mean[mean <= 0 ] = 0.0001
         standard_deviation = self.detection_uncertainty * mean
         
         detected_energy = np.random.normal(mean, standard_deviation)
         detected_energy[detected_energy < 0] = 0
 
         return detected_energy
+
+    
+class Response(object):
+    """
+    Detector response information.
+    """
+
+    def __init__(self, true_energy, detected_energy, nbins_true_energy, nbins_detected_energy, Aeff_max):
+        """
+        Detector response information.
+        
+        @param true_energy true energies from simulation [TeV]
+        @param detected_energy detected energies from simulation [TeV]
+        @param nbins_true_energy number of true energy bins
+        @param nbins_detected_energy number of detected energy bins   
+        @param Aeff_max maximum of the effective area in m^2
+        """
+
+        # Get histogram
+        H, self.true_energy_bins, self.detected_energy_bins = np.histogram2d(np.log(true_energy), np.log(detected_energy),
+                                                                   bins=[nbins_true_energy, nbins_detected_energy]);
+
+        self.true_energy_bins = np.exp(self.true_energy_bins)
+        self.detected_energy_bins = np.exp(self.detected_energy_bins)  
+        
+        # Normalise
+        self.matrix = H / sum(sum(H))
+
+        # Include effective area
+        self.matrix = self.matrix * Aeff_max
+        
+    def show(self):
+        """
+        Show a ridgeplot of response in each bin.
+        """
+
+        # Colormap
+        norm = matplotlib.colors.Normalize(vmin=min(np.log(self.true_energy_bins[:-1])), 
+                                           vmax=max(np.log(self.true_energy_bins[:-1])))
+        cmap = matplotlib.cm.get_cmap('viridis')
+        
+        y_values = []
+        for i, E in enumerate(self.true_energy_bins[:-1]):
+            y_values.append(self.matrix[i])
+        y_values = np.array(y_values)
+        x_values = self.detected_energy_bins[:-1]
+            
+        y_add = 0.0
+        max_y = np.max([np.max(_) for _ in y_values])
+        delta_y = 0.1 * max_y
+
+        # Plot
+        fig, ax = plt.subplots()
+        fig.set_size_inches((10, 7))
+
+        for i, y in enumerate(y_values):  
+            idx = y > 0
+            ax.fill_between(x_values[idx], y_add, y_add+y[idx], zorder=-10, 
+                            color=cmap(norm(np.log(self.true_energy_bins[i]))), alpha = 0.5)
+            y_add+=delta_y
+
+        # Formatting
+        ax.set_yticks([]);
+        for s in ['left', 'right', 'top']:
+            ax.spines[s].set_visible(False)
+        ax.set_xlabel('$E_\mathrm{det}$ / TeV')
+        ax.set_xscale('log')
+        ax.set_title('P($E_\mathrm{det}$ | $E_\mathrm{true}$, detector model)');
+
+        

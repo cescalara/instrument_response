@@ -2,7 +2,7 @@ import numpy as np
 import h5py
 
 from .power_law import BoundedPowerLaw
-from .detector import EffectiveArea, Calorimeter
+from .detector import EffectiveArea, Calorimeter, Response
 
 class ToySimulation(object):
     """
@@ -31,11 +31,16 @@ class ToySimulation(object):
         calorimeter_break = 10.0 # TeV
         calorimeter_uncertainty = 0.2
         self.calorimeter = Calorimeter(calorimeter_scale, calorimeter_break, calorimeter_uncertainty)
-        
+
+        # Initialise repsonse info
+        self.response = None
+    
 
     def run(self, N):
         """
         Run the simulation
+        
+        @param N number of particles/photons to simulate
         """
 
         self.N = N
@@ -84,4 +89,30 @@ class ToySimulation(object):
             f.create_dataset('number_of_secondaries', data = self.number_of_secondaries)
             f.create_dataset('number_of_detected_secondaries', data = self.number_of_detected_secondaries)
             f.create_dataset('detected_energy', data = self.detected_energy)
+            f.create_dataset('effective_area_maximum', data = self.effective_area.maximum)
+            
+            if self.response:
+                f.create_dataset('response_matrix', data = self.response.matrix)
+                f.create_dataset('true_energy_bins', data = self.response.true_energy_bins)
+                f.create_dataset('detected_energy_bins', data = self.response.detected_energy_bins)
+                  
+                
+    def generate_response(self, N, nbins_true_energy, nbins_detected_energy):
+        """
+        Generate a response matrix.
+
+        @param N number of particles/photons to simulate
+        @param nbins_true_energy number of true energy bins
+        @param nbins_detected_energy number of detected energy bins
+        """
+        
+        # Run the simulation
+        self.run(N)
+        
+        Aeff_max = self.effective_area.maximum
+        self.response = Response(self.true_energy, self.detected_energy, nbins_true_energy, nbins_detected_energy, Aeff_max)
+        
+
+        
+
     
