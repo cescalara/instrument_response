@@ -29,7 +29,7 @@ class ToySimulation(object):
         # Define detector properties
         calorimeter_scale = 1000.0
         calorimeter_break = 10.0 # TeV
-        calorimeter_uncertainty = 0.2
+        calorimeter_uncertainty = 0.01
         self.calorimeter = Calorimeter(calorimeter_scale, calorimeter_break, calorimeter_uncertainty)
 
         # Initialise repsonse info
@@ -52,12 +52,12 @@ class ToySimulation(object):
         # Model detection effects
 
         # Effective area
-        interaction_probability = self.effective_area.interaction_probability(self.true_energy)
-        interacted_in_detector = np.zeros(len(interaction_probability))
-        for i, p in enumerate(interaction_probability):
-            interacted_in_detector[i] = np.random.choice([0, 1], p=[1-p, p])
-
-        self.true_energy = self.true_energy[np.where(interacted_in_detector == 1.0)]
+        #interaction_probability = self.effective_area.interaction_probability(self.true_energy)
+        #interacted_in_detector = np.zeros(len(interaction_probability))
+        #for i, p in enumerate(interaction_probability):
+        #    interacted_in_detector[i] = np.random.choice([0, 1], p=[1-p, p])
+        #
+        #self.true_energy = self.true_energy[np.where(interacted_in_detector == 1.0)]
 
         # Event generation
         # Each photon/particle produces a number of secondary particles proportional to its energy.
@@ -71,8 +71,9 @@ class ToySimulation(object):
         # Some fraction of these secondaries hit the detector.
         # Others are lost/absorbed in the detector material, or just do not interact.
         self.detected_fraction = np.random.normal(0.5, 0.1, len(self.number_of_secondaries))
-        self.number_of_detected_secondaries = self.detected_fraction * self.number_of_secondaries
-
+        #self.number_of_detected_secondaries = self.detected_fraction * self.number_of_secondaries
+        self.number_of_detected_secondaries = self.number_of_secondaries
+        
         # Now digitise energy into bins based on number of detected secondaries (ie. pulse height)
         # This will be done based on some calibration procedure
         self.detected_energy = self.calorimeter.detected_energy(self.number_of_detected_secondaries, energy_per_secondary)

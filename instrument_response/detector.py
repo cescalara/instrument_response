@@ -105,12 +105,21 @@ class Response(object):
 
         self.true_energy_bins = np.exp(self.true_energy_bins)
         self.detected_energy_bins = np.exp(self.detected_energy_bins)  
-        
+
+        # Divide by true_energy hist
+        h, _ = np.histogram(np.log(true_energy), bins=nbins_true_energy)
+        h = h/sum(h)
+
         # Normalise
         self.matrix = H / sum(sum(H))
 
+        #for i in range(nbins_true_energy):
+        #    for j in range(nbins_detected_energy):
+        #        self.matrix[i][j] = self.matrix[i][j] * h[j]
+        
+
         # Include effective area
-        self.matrix = self.matrix * Aeff_max
+        self.matrix = self.matrix #* Aeff_max
         
     def show(self):
         """
