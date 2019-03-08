@@ -6,7 +6,7 @@ class BoundedPowerLaw(object):
     
     pdf ~ x^(-alpha) betweem xmin and xmax.
     
-    Thanks to Hans for the nice code!
+    Thanks to @HansN87 for the nice code!
     """
        
     def __init__(self, gamma, xmin, xmax):
