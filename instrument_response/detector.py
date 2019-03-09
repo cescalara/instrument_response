@@ -100,26 +100,24 @@ class Response(object):
         """
 
         # Get histogram
-        H, self.true_energy_bins, self.detected_energy_bins = np.histogram2d(np.log(true_energy), np.log(detected_energy),
+        self.H, self.true_energy_bins, self.detected_energy_bins = np.histogram2d(np.log(true_energy), np.log(detected_energy),
                                                                    bins=[nbins_true_energy, nbins_detected_energy]);
 
         self.true_energy_bins = np.exp(self.true_energy_bins)
         self.detected_energy_bins = np.exp(self.detected_energy_bins)  
 
-        # Divide by true_energy hist
+        # At every point, divide by input MC counts
         h, _ = np.histogram(np.log(true_energy), bins=nbins_true_energy)
-        h = h/sum(h)
 
-        # Normalise
-        self.matrix = H / sum(sum(H))
-
-        #for i in range(nbins_true_energy):
-        #    for j in range(nbins_detected_energy):
-        #        self.matrix[i][j] = self.matrix[i][j] * h[j]
+        self.matrix = self.H
         
+        for i in range(nbins_true_energy):
+            for j in range(nbins_detected_energy):
+                self.matrix[i][j] = self.matrix[i][j] / h[i]
 
         # Include effective area
         self.matrix = self.matrix #* Aeff_max
+        
         
     def show(self):
         """
