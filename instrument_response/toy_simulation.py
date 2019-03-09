@@ -56,7 +56,7 @@ class ToySimulation(object):
         #interacted_in_detector = np.zeros(len(interaction_probability))
         #for i, p in enumerate(interaction_probability):
         #    interacted_in_detector[i] = np.random.choice([0, 1], p=[1-p, p])
-        #
+        
         #self.true_energy = self.true_energy[np.where(interacted_in_detector == 1.0)]
 
         # Event generation
