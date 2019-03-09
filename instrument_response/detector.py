@@ -88,10 +88,11 @@ class Response(object):
     Detector response information.
     """
 
-    def __init__(self, true_energy, detected_energy, nbins_true_energy, nbins_detected_energy, Aeff_max):
+    def __init__(self, initial_energy, true_energy, detected_energy, nbins_true_energy, nbins_detected_energy, Aeff_max):
         """
         Detector response information.
         
+        @param initial_energy initial energies from simulation [TeV]
         @param true_energy true energies from simulation [TeV]
         @param detected_energy detected energies from simulation [TeV]
         @param nbins_true_energy number of true energy bins
@@ -99,21 +100,28 @@ class Response(object):
         @param Aeff_max maximum of the effective area in m^2
         """
 
-        # Get histogram
-        self.H, self.true_energy_bins, self.detected_energy_bins = np.histogram2d(np.log(true_energy), np.log(detected_energy),
-                                                                   bins=[nbins_true_energy, nbins_detected_energy]);
-
-        self.true_energy_bins = np.exp(self.true_energy_bins)
-        self.detected_energy_bins = np.exp(self.detected_energy_bins)  
-
-        # At every point, divide by input MC counts
-        h, _ = np.histogram(np.log(true_energy), bins=nbins_true_energy)
-
-        self.matrix = self.H
+        true_energy_bins = np.logspace(np.log(min(true_energy)), np.log(max(true_energy)),
+                                       nbins_true_energy+1, base=np.e)
+        detected_energy_bins = np.logspace(np.log(min(detected_energy)), np.log(max(detected_energy)),
+                                           nbins_detected_energy+1, base=np.e)
         
+        # Get energy dispersion histogram
+        self.H, self.true_energy_bins, self.detected_energy_bins = np.histogram2d(true_energy, detected_energy,
+                                                                   bins=[true_energy_bins, detected_energy_bins]);
+
+        #self.true_energy_bins = np.exp(self.true_energy_bins)
+        #self.detected_energy_bins = np.exp(self.detected_energy_bins)  
+
+        h_init, _ = np.histogram(initial_energy, bins=self.true_energy_bins)
+        h_true, _ = np.histogram(true_energy, bins=self.true_energy_bins)
+        effective_area = h_true / h_init
+    
+        # For each bin, divide by input MC counts and multiply by corresponding
+        # effective area factor
+        self.matrix = np.zeros((nbins_true_energy, nbins_detected_energy))
         for i in range(nbins_true_energy):
             for j in range(nbins_detected_energy):
-                self.matrix[i][j] = self.matrix[i][j] / h[i]
+                self.matrix[i][j] = (self.H[i][j] / h_true[i]) * effective_area[i]
 
         # Include effective area
         self.matrix = self.matrix #* Aeff_max
