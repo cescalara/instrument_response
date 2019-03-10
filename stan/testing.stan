@@ -1,67 +1,41 @@
 
 functions {
 
-  real bounded_power_law(real E, real alpha, real min_energy, real max_energy) {
-
-    real norm = (1-alpha) * ( pow(max_energy, 1-alpha) - pow(min_energy, 1-alpha) ); 
-
-    if (E < min_energy || E > max_energy) {
-      return 0;
-    }
-    else {
-      return norm * pow(E, -alpha);
-    }
-  }
-
-  real differential_flux(real E, real N, real alpha, real min_energy, real max_energy) {
-
-    return N * bounded_power_law(E, alpha, min_energy, max_energy);
-  }
-
-  vector integral(vector Ebins, real N, real alpha, real min_energy, real max_energy) {
-
-    int len = num_elements(Ebins);
-    vector[len-1] output;
-
-    for (i in 1:len-1) {
-      output[i] = ((Ebins[i+1] - Ebins[i]) / 6.0) * (differential_flux(Ebins[i], N, alpha, min_energy, max_energy)
-						     + (4*differential_flux((Ebins[i]+Ebins[i+1])/2, N, alpha, min_energy, max_energy))
-						     + differential_flux(Ebins[i+1], N, alpha, min_energy, max_energy));
-
-    }
-    return output;
-  }
+#include bspline_ev.stan
 
 }
 
 data {
 
-  int Nbins_true;
-  int Nbins_detected;
+ /* spline */
+  int p; // spline degree
+  int Lknots_x; // length of knot vector
+  int Lknots_y; // length of knot vector
 
-  vector[Nbins_true+1] true_energy_bins;
-  vector[Nbins_detected+1] detected_energy_bins;
+  vector[Lknots_x] xknots; // knot sequence - needs to be a monotonic sequence
+  vector[Lknots_y] yknots; // knot sequence - needs to be a monotonic sequence
+ 
+  matrix[Lknots_x+p-1, Lknots_y+p-1] c; // spline coefficients 
 
-  real alpha;
-  real N;
-
-  real min_energy;
-  real max_energy;
+  int Nevals; // length of vector to evaluate
+  vector<lower=xknots[1], upper=xknots[Lknots_x]>[Nevals] xvals; // vector to evaluate
+  vector<lower=yknots[1], upper=yknots[Lknots_y]>[Nevals] yvals; // vector to evaluate
   
 }
 
 generated quantities {
 
+  matrix[Nevals, Nevals] zvals;
+  matrix[Nevals, Nevals] log_zvals;
 
-  vector[Nbins_true] spectrum;
-  vector[Nbins_true] model_flux;
-  
-  for (i in 1:Nbins_true) {
+  for (idx_x in 1:Nevals) {
+    for (idx_y in 1:Nevals) {
 
-    spectrum[i] = differential_flux(true_energy_bins[i], N, alpha, min_energy, max_energy); 
-    model_flux = integral(true_energy_bins, N, alpha, min_energy, max_energy);
+      zvals[idx_x, idx_y] = bspline_func_2d(xknots, yknots, p, c, xvals[idx_x], yvals[idx_y]);
+      log_zvals[idx_x, idx_y] = log(zvals[idx_x, idx_y]);
       
-  }
+    } 
+  } 
   
   
 }
