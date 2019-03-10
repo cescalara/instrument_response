@@ -107,6 +107,9 @@ class Response(object):
         @param nbins_detected_energy number of detected energy bins   
         """
 
+        self.nbins_true_energy = nbins_true_energy
+        self.nbins_detected_energy = nbins_detected_energy
+        
         true_energy_bins = np.logspace(np.log(min(true_energy)), np.log(max(true_energy)),
                                        nbins_true_energy+1, base=np.e)
         detected_energy_bins = np.logspace(np.log(min(detected_energy)), np.log(max(detected_energy)),
