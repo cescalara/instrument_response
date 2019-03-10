@@ -25,7 +25,8 @@ class ToySimulation(object):
         effective_area_index = 2.0 # power law index of increase in E
         effective_area_break = 10.0 # TeV
         self.effective_area = EffectiveArea(effective_area_scale, effective_area_index, effective_area_break) 
-
+        self.total_effective_area = self.effective_area.integrated(min_energy, max_energy) # m^2
+        
         # Define detector properties
         calorimeter_scale = 1000.0
         calorimeter_break = 10.0 # TeV
@@ -36,19 +37,22 @@ class ToySimulation(object):
         self.response = None
     
 
-    def run(self, N):
+    def run(self, N, T = 1):
         """
         Run the simulation
         
         @param N number of particles/photons to simulate
+        @param T time period of simulation [yr]
         """
 
         self.N = N
-
+        self.total_dN_dt = N / T # [yr^-1]
+        self.total_dN_dtdA = N / (T * self.effective_area.maximum) # [yr^-1 m^-2] 
+        
         # Sample energies from a power law
         self.true_energy = self.power_law.samples(self.N)
         self.initial_energy = self.true_energy
-        
+ 
         # Model detection effects
 
         # Effective area

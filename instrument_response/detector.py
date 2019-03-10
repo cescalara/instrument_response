@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib
 from matplotlib import pyplot as plt
+from scipy import integrate
 
 class EffectiveArea(object):
     """
@@ -41,6 +42,18 @@ class EffectiveArea(object):
         """
 
         return self.evaluate(E) / self.maximum
+
+    def integrated(self, min_energy, max_energy):
+        """
+        Calculate the integrated effective area for a given energy range. 
+
+        @param min_energy [TeV]
+        @param max_energy [TeV]
+        """
+
+        integral, _ = integrate.quad(self.evaluate, min_energy, max_energy)
+
+        return integral
         
 
 class Calorimeter(object):
@@ -88,7 +101,7 @@ class Response(object):
     Detector response information.
     """
 
-    def __init__(self, initial_energy, true_energy, detected_energy, nbins_true_energy, nbins_detected_energy, Aeff_max):
+    def __init__(self, initial_energy, true_energy, detected_energy, nbins_true_energy, nbins_detected_energy, effective_area):
         """
         Detector response information.
         
@@ -97,7 +110,7 @@ class Response(object):
         @param detected_energy detected energies from simulation [TeV]
         @param nbins_true_energy number of true energy bins
         @param nbins_detected_energy number of detected energy bins   
-        @param Aeff_max maximum of the effective area in m^2
+        @param effective_area EffectiveArea object
         """
 
         true_energy_bins = np.logspace(np.log(min(true_energy)), np.log(max(true_energy)),
@@ -106,25 +119,19 @@ class Response(object):
                                            nbins_detected_energy+1, base=np.e)
         
         # Get energy dispersion histogram
-        self.H, self.true_energy_bins, self.detected_energy_bins = np.histogram2d(true_energy, detected_energy,
+        self.dN_dt_joint, self.true_energy_bins, self.detected_energy_bins = np.histogram2d(true_energy, detected_energy,
                                                                    bins=[true_energy_bins, detected_energy_bins]);
 
-        #self.true_energy_bins = np.exp(self.true_energy_bins)
-        #self.detected_energy_bins = np.exp(self.detected_energy_bins)  
-
-        h_init, _ = np.histogram(initial_energy, bins=self.true_energy_bins)
-        h_true, _ = np.histogram(true_energy, bins=self.true_energy_bins)
-        effective_area = h_true / h_init
+        dN_dt_init, _ = np.histogram(initial_energy, bins=self.true_energy_bins)
+        dN_dt_true, _ = np.histogram(true_energy, bins=self.true_energy_bins)
+        effective_area = (dN_dt_true / dN_dt_init) * effective_area.maximum # m^2
     
         # For each bin, divide by input MC counts and multiply by corresponding
         # effective area factor
         self.matrix = np.zeros((nbins_true_energy, nbins_detected_energy))
         for i in range(nbins_true_energy):
             for j in range(nbins_detected_energy):
-                self.matrix[i][j] = (self.H[i][j] / h_true[i]) * effective_area[i]
-
-        # Include effective area
-        self.matrix = self.matrix #* Aeff_max
+                self.matrix[i][j] = (self.dN_dt_joint[i][j] / dN_dt_true[i]) * effective_area[i] # m^2
         
         
     def show(self):
