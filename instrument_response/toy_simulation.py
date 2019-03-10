@@ -91,7 +91,6 @@ class ToySimulation(object):
             f.create_dataset('number_of_detected_secondaries', data = self.number_of_detected_secondaries)
             f.create_dataset('detected_energy', data = self.detected_energy)
             f.create_dataset('effective_area_maximum', data = self.effective_area.maximum)
-        
 
         
 

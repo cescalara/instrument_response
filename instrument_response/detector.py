@@ -95,16 +95,16 @@ class Response(object):
     """
 
     
-    def __init__(self, initial_energy, true_energy, detected_energy, nbins_true_energy, nbins_detected_energy, effective_area_max):
+    def __init__(self, initial_energy, true_energy, detected_energy, effective_area_max, nbins_true_energy=50, nbins_detected_energy=50):
         """
         Detector response information.
         
         @param initial_energy initial energies from simulation [TeV]
         @param true_energy true energies from simulation [TeV]
         @param detected_energy detected energies from simulation [TeV]
+        @param effective_area_max maximum value of the effective area in m^2
         @param nbins_true_energy number of true energy bins
         @param nbins_detected_energy number of detected energy bins   
-        @param effective_area_max maximum value of the effective area in m^2
         """
 
         true_energy_bins = np.logspace(np.log(min(true_energy)), np.log(max(true_energy)),
