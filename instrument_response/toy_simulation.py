@@ -4,6 +4,7 @@ import h5py
 from .power_law import BoundedPowerLaw
 from .detector import EffectiveArea, Calorimeter, Response
 
+
 class ToySimulation(object):
     """
     A toy simulation used to demonstrate how an instrument response works.
@@ -24,18 +25,16 @@ class ToySimulation(object):
         effective_area_scale = 10.0 # m^2
         effective_area_index = 2.0 # power law index of increase in E
         effective_area_break = 10.0 # TeV
+
         self.effective_area = EffectiveArea(effective_area_scale, effective_area_index, effective_area_break) 
-        self.total_effective_area = self.effective_area.integrated(min_energy, max_energy) # m^2
         
         # Define detector properties
         calorimeter_scale = 1000.0
         calorimeter_break = 10.0 # TeV
         calorimeter_uncertainty = 0.2
+
         self.calorimeter = Calorimeter(calorimeter_scale, calorimeter_break, calorimeter_uncertainty)
 
-        # Initialise repsonse info
-        self.response = None
-    
 
     def run(self, N, T = 1):
         """
@@ -53,8 +52,6 @@ class ToySimulation(object):
         self.true_energy = self.power_law.samples(self.N)
         self.initial_energy = self.true_energy
  
-        # Model detection effects
-
         # Effective area
         interaction_probability = self.effective_area.interaction_probability(self.true_energy)
         interacted_in_detector = np.zeros(len(interaction_probability))
@@ -80,7 +77,7 @@ class ToySimulation(object):
         # Now digitise energy into bins based on number of detected secondaries (ie. pulse height)
         # This will be done based on some calibration procedure
         self.detected_energy = self.calorimeter.detected_energy(self.number_of_detected_secondaries, energy_per_secondary)
-        #self.detected_energy = self.detected_energy[np.where(self.detected_energy > 0)]
+
         
     def save(self, filename):
         """
@@ -94,27 +91,6 @@ class ToySimulation(object):
             f.create_dataset('number_of_detected_secondaries', data = self.number_of_detected_secondaries)
             f.create_dataset('detected_energy', data = self.detected_energy)
             f.create_dataset('effective_area_maximum', data = self.effective_area.maximum)
-            
-            if self.response:
-                f.create_dataset('response_matrix', data = self.response.matrix)
-                f.create_dataset('true_energy_bins', data = self.response.true_energy_bins)
-                f.create_dataset('detected_energy_bins', data = self.response.detected_energy_bins)
-                  
-                
-    def generate_response(self, N, nbins_true_energy, nbins_detected_energy):
-        """
-        Generate a response matrix.
-
-        @param N number of particles/photons to simulate
-        @param nbins_true_energy number of true energy bins
-        @param nbins_detected_energy number of detected energy bins
-        """
-        
-        # Run the simulation
-        self.run(N)
-        
-        Aeff_max = self.effective_area.maximum
-        self.response = Response(self.true_energy, self.detected_energy, nbins_true_energy, nbins_detected_energy, Aeff_max)
         
 
         

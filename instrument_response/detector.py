@@ -3,6 +3,7 @@ import matplotlib
 from matplotlib import pyplot as plt
 from scipy import integrate
 
+
 class EffectiveArea(object):
     """
     Simple effective area as a function of enegry.
@@ -26,6 +27,7 @@ class EffectiveArea(object):
         E = np.linspace(1.0, energy_break * 10, 1e4)
         self.maximum = max(self.evaluate(E))
 
+        
     def evaluate(self, E):
         """
         Effective area as a function of energy.
@@ -35,6 +37,7 @@ class EffectiveArea(object):
 
         return self.scale * E**self.index * np.exp(-E/self.energy_break)
 
+    
     def interaction_probability(self, E):
         """
         P(interacts | E) is related to the effective area. If we have P(interaction) = 1 at the maximum, then 
@@ -42,25 +45,14 @@ class EffectiveArea(object):
         """
 
         return self.evaluate(E) / self.maximum
-
-    def integrated(self, min_energy, max_energy):
-        """
-        Calculate the integrated effective area for a given energy range. 
-
-        @param min_energy [TeV]
-        @param max_energy [TeV]
-        """
-
-        integral, _ = integrate.quad(self.evaluate, min_energy, max_energy)
-
-        return integral
         
-
+    
 class Calorimeter(object):
     """
     Model simple interactions in a toy calorimeter.
     """
 
+    
     def __init__(self, scale, energy_break, detection_uncertainty):        
         """
         Model simple interactions in a toy calorimeter.
@@ -70,6 +62,7 @@ class Calorimeter(object):
         self.energy_break = energy_break
         self.detection_uncertainty = detection_uncertainty
 
+        
     def expected_number_of_secondaries(self, E):
         """
         Number of secondaries prodcued in the calorimeter is linear in energy.
@@ -101,7 +94,8 @@ class Response(object):
     Detector response information.
     """
 
-    def __init__(self, initial_energy, true_energy, detected_energy, nbins_true_energy, nbins_detected_energy, effective_area):
+    
+    def __init__(self, initial_energy, true_energy, detected_energy, nbins_true_energy, nbins_detected_energy, effective_area_max):
         """
         Detector response information.
         
@@ -110,7 +104,7 @@ class Response(object):
         @param detected_energy detected energies from simulation [TeV]
         @param nbins_true_energy number of true energy bins
         @param nbins_detected_energy number of detected energy bins   
-        @param effective_area EffectiveArea object
+        @param effective_area_max maximum value of the effective area in m^2
         """
 
         true_energy_bins = np.logspace(np.log(min(true_energy)), np.log(max(true_energy)),
@@ -124,7 +118,7 @@ class Response(object):
 
         dN_dt_init, _ = np.histogram(initial_energy, bins=self.true_energy_bins)
         dN_dt_true, _ = np.histogram(true_energy, bins=self.true_energy_bins)
-        effective_area = (dN_dt_true / dN_dt_init) * effective_area.maximum # m^2
+        effective_area = (dN_dt_true / dN_dt_init) * effective_area_max # m^2
     
         # For each bin, divide by input MC counts and multiply by corresponding
         # effective area factor
