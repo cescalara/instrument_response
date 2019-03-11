@@ -37,10 +37,10 @@ functions {
   /**
    * Integrate the differential flux using Simpson's rule
    */
-  vector integral(vector Ebins, real F_N, real alpha, real min_energy, real max_energy) {
+  row_vector integral(vector Ebins, real F_N, real alpha, real min_energy, real max_energy) {
 
     int len = num_elements(Ebins);
-    vector[len-1] output;
+    row_vector[len-1] output;
 
     for (i in 1:len-1) {
       output[i] = ((Ebins[i+1] - Ebins[i]) / 6.0) * (differential_flux(Ebins[i], F_N, alpha, min_energy, max_energy)
@@ -69,13 +69,6 @@ data {
   
 }
 
-transformed data {
-
-  matrix[Nbins_detected, Nbins_true] transposed_matrix;
-
-  transposed_matrix = response_matrix';
-
-}
 
 parameters {
 
@@ -86,16 +79,17 @@ parameters {
 
 transformed parameters {
 
-  vector[Nbins_true] model_flux;
-  vector[Nbins_detected] s;
+  row_vector[Nbins_true] model_flux;
+  row_vector[Nbins_detected] s;
 
   /* forward folding */
   for (i in 1:Nbins_detected) {
 
     model_flux = integral(true_energy_bins, F_N, alpha, min_energy, max_energy);
-    s[i] = dot_product(model_flux, transposed_matrix[i]);
 
   }
+
+  s = model_flux * response_matrix;
 
 }
 
