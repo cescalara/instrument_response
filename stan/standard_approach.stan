@@ -21,20 +21,20 @@ functions {
     }
   }
 
-  real differential_flux(real E, real N, real alpha, real min_energy, real max_energy) {
+  real differential_flux(real E, real F_N, real alpha, real min_energy, real max_energy) {
 
-    return N * bounded_power_law(E, alpha, min_energy, max_energy);
+    return F_N * bounded_power_law(E, alpha, min_energy, max_energy);
   }
 
-  vector integral(vector Ebins, real N, real alpha, real min_energy, real max_energy) {
+  vector integral(vector Ebins, real F_N, real alpha, real min_energy, real max_energy) {
 
     int len = num_elements(Ebins);
     vector[len-1] output;
 
     for (i in 1:len-1) {
-      output[i] = ((Ebins[i+1] - Ebins[i]) / 6.0) * (differential_flux(Ebins[i], N, alpha, min_energy, max_energy)
-						     + (4*differential_flux((Ebins[i]+Ebins[i+1])/2, N, alpha, min_energy, max_energy))
-						     + differential_flux(Ebins[i+1], N, alpha, min_energy, max_energy));
+      output[i] = ((Ebins[i+1] - Ebins[i]) / 6.0) * (differential_flux(Ebins[i], F_N, alpha, min_energy, max_energy)
+						     + (4*differential_flux((Ebins[i]+Ebins[i+1])/2, F_N, alpha, min_energy, max_energy))
+						     + differential_flux(Ebins[i+1], F_N, alpha, min_energy, max_energy));
 
     }
     return output;
@@ -68,7 +68,7 @@ transformed data {
 
 parameters {
 
-  real<lower=0, upper=5> N;
+  real<lower=0, upper=5> F_N;
   real<lower=1, upper=5> alpha;
 
 }
@@ -81,7 +81,7 @@ transformed parameters {
   /* model */
   for (i in 1:Nbins_detected) {
     
-    model_flux = integral(true_energy_bins, N, alpha, min_energy, max_energy);
+    model_flux = integral(true_energy_bins, F_N, alpha, min_energy, max_energy);
 
   }
   

@@ -91,7 +91,8 @@ class ToySimulation(object):
             f.create_dataset('number_of_detected_secondaries', data = self.number_of_detected_secondaries)
             f.create_dataset('detected_energy', data = self.detected_energy)
             f.create_dataset('effective_area_maximum', data = self.effective_area.maximum)
-
+            f.create_dataset('power_law_index', data = self.power_law.gamma)
+            f.create_dataset('flux_normalisation', data = self.total_dN_dtdA)
         
 
     

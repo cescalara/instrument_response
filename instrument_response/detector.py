@@ -2,6 +2,8 @@ import numpy as np
 import matplotlib
 from matplotlib import pyplot as plt
 from scipy import integrate
+from scipy.ndimage import gaussian_filter
+from scipy.interpolate import RectBivariateSpline
 
 
 class EffectiveArea(object):
@@ -135,9 +137,42 @@ class Response(object):
                 self.matrix[i][j] = (self.dN_dt_joint[i][j] / dN_dt_true[i]) * effective_area[i] # m^2
                 self.p_detected_given_true[i][j] = self.dN_dt_joint[i][j] / dN_dt_true[i] # dimensionless
 
-        # Normalise probability distribution
-        #self.p_detected_given_true = self.p_detected_given_true / sum(sum(self.p_detected_given_true))
+        # Fit a spline to the conditional probabilities
+        # TODO: fix hard coded values
+        smoothing_standard_deviation = (np.log(3), np.log(3))
+        prob_threshold = 1.0e-18
+        
+        # Smooth
+        p_smooth = gaussian_filter(self.p_detected_given_true, smoothing_standard_deviation)
+        # Deal with -inf
+        p_smooth[p_smooth < prob_threshold] = prob_threshold
+        log_p_smooth = np.log(p_smooth)
 
+        # Get bin centres
+        def get_centres(bins):
+            return bins[:-1] + (bins[1:]-bins[:-1])/2
+        self.true_centres = get_centres(self.true_energy_bins)
+        self.detected_centres = get_centres(self.detected_energy_bins)
+
+        self._spline = RectBivariateSpline(self.true_centres, self.detected_centres, log_p_smooth, s=0.0)
+
+        
+    def get_log_conditionals(self, detected_energy, true_energy_grid):
+        """
+        Calculate log(P(detected energy | true energy)).
+
+        @param detected_energy to evaluate probability for.
+        @param true_energy_grid to evaluate probability for.
+        """
+
+        normalised_conditional_log_probability = []
+        for Edet in detected_energy:
+            cond_prob = np.exp([self._spline(_, Edet)[0][0] for _ in true_energy_grid])
+            normalised_conditional_log_probability.append(np.log(cond_prob / sum(cond_prob)))
+
+        return normalised_conditional_log_probability
+
+        
         
     def show(self):
         """
