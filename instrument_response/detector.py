@@ -139,7 +139,7 @@ class Response(object):
 
         # Fit a spline to the conditional probabilities
         # TODO: fix hard coded values
-        smoothing_standard_deviation = (np.log(3), np.log(3))
+        smoothing_standard_deviation = (np.log(4), np.log(4))
         prob_threshold = 1.0e-18
         
         # Smooth
