@@ -36,7 +36,7 @@ class ToySimulation(object):
         self.calorimeter = Calorimeter(calorimeter_scale, calorimeter_break, calorimeter_uncertainty)
 
 
-    def run(self, N, T = 1):
+    def run(self, N, T = 1, seed=0):
         """
         Run the simulation
         
@@ -44,6 +44,10 @@ class ToySimulation(object):
         @param T time period of simulation [yr]
         """
 
+
+        # Set random seed
+        np.random.seed(seed)
+        
         self.N = N
         self.total_dN_dt = N / T # [yr^-1]
         self.total_dN_dtdA = N / (T * self.effective_area.maximum) # [yr^-1 m^-2] 

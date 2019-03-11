@@ -113,14 +113,14 @@ class Response(object):
         self.nbins_true_energy = nbins_true_energy
         self.nbins_detected_energy = nbins_detected_energy
         
-        true_energy_bins = np.logspace(np.log(min_energy), np.log(max_energy),
+        self.true_energy_bins = np.logspace(np.log(min_energy), np.log(max_energy),
                                        nbins_true_energy+1, base=np.e)
-        detected_energy_bins = np.logspace(np.log(min(detected_energy)), np.log(max(detected_energy)),
+        self.detected_energy_bins = np.logspace(np.log(min(detected_energy)), np.log(max(detected_energy)),
                                            nbins_detected_energy+1, base=np.e)
         
         # Get energy dispersion histogram
-        self.dN_dt_joint, self.true_energy_bins, self.detected_energy_bins = np.histogram2d(true_energy, detected_energy,
-                                                                   bins=[true_energy_bins, detected_energy_bins]);
+        self.dN_dt_joint, _, _ = np.histogram2d(true_energy, detected_energy,
+                                                                   bins=[self.true_energy_bins, self.detected_energy_bins]);
 
         dN_dt_init, _ = np.histogram(initial_energy, bins=self.true_energy_bins)
         dN_dt_true, _ = np.histogram(true_energy, bins=self.true_energy_bins)
