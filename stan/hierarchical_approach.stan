@@ -9,11 +9,10 @@
 
 functions {
 
-#include bspline_ev.stan
 #include interpolate.stan
 
   /**
-   * Bounded power law to match the implementation in instrument_response/toy_simulation.py
+   * Bounded power law log pdf to match the implementation in instrument_response/toy_simulation.py
    */
   real bounded_power_law_lpdf(real E, real alpha, real F_N, real min_energy, real max_energy) {
 
@@ -95,17 +94,17 @@ model {
     lp[i] = 0;
     
     /* spectrum */
-    lp[i] += bounded_power_law_lpdf(Etrue[i] | alpha, F_N, min_energy, max_energy);
-
+    lp[i] += bounded_power_law_lpdf(Etrue[i] | alpha, F_N, min_energy, max_energy); // [m^-2]
 
     /* P(Edet | Etrue) */
     log_p_det_given_true = interpolate(Etrue_grid, cond_log_prob[i], Etrue[i]);
     lp[i] += log_p_det_given_true;
 
     /* effective area */
-    lp[i] += log(get_effective_area(Etrue[i]));
+    lp[i] += log(get_effective_area(Etrue[i])); // [m^2]
     
     target += lp[i];
+
   }
 
 

@@ -9,6 +9,11 @@
 
 functions {
 
+  /* Define functions to match implementation in response_demo.ipynb */
+
+  /**
+   * Bounded power law to match the implementation in instrument_response/toy_simulation.py
+   */
   real bounded_power_law(real E, real alpha, real min_energy, real max_energy) {
 
     real norm = (1-alpha) * ( pow(max_energy, 1-alpha) - pow(min_energy, 1-alpha) ); 
@@ -21,11 +26,17 @@ functions {
     }
   }
 
+  /**
+   * F_N * power law 
+   */
   real differential_flux(real E, real F_N, real alpha, real min_energy, real max_energy) {
 
     return F_N * bounded_power_law(E, alpha, min_energy, max_energy);
   }
 
+  /**
+   * Integrate the differential flux using Simpson's rule
+   */
   vector integral(vector Ebins, real F_N, real alpha, real min_energy, real max_energy) {
 
     int len = num_elements(Ebins);
@@ -78,16 +89,12 @@ transformed parameters {
   vector[Nbins_true] model_flux;
   vector[Nbins_detected] s;
 
-  /* model */
-  for (i in 1:Nbins_detected) {
-    
-    model_flux = integral(true_energy_bins, F_N, alpha, min_energy, max_energy);
-
-  }
-  
   /* forward folding */
   for (i in 1:Nbins_detected) {
+
+    model_flux = integral(true_energy_bins, F_N, alpha, min_energy, max_energy);
     s[i] = dot_product(model_flux, transposed_matrix[i]);
+
   }
 
 }
