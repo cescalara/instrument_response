@@ -95,7 +95,8 @@ class Response(object):
     """
 
     
-    def __init__(self, initial_energy, true_energy, detected_energy, effective_area_max, nbins_true_energy=50, nbins_detected_energy=50):
+    def __init__(self, initial_energy, true_energy, detected_energy, effective_area_max, nbins_true_energy=50, nbins_detected_energy=50,
+                 min_energy=1, max_energy=100):
         """
         Detector response information.
         
@@ -110,7 +111,7 @@ class Response(object):
         self.nbins_true_energy = nbins_true_energy
         self.nbins_detected_energy = nbins_detected_energy
         
-        true_energy_bins = np.logspace(np.log(min(true_energy)), np.log(max(true_energy)),
+        true_energy_bins = np.logspace(np.log(min_energy), np.log(max_energy),
                                        nbins_true_energy+1, base=np.e)
         detected_energy_bins = np.logspace(np.log(min(detected_energy)), np.log(max(detected_energy)),
                                            nbins_detected_energy+1, base=np.e)
@@ -125,11 +126,18 @@ class Response(object):
     
         # For each bin, divide by input MC counts and multiply by corresponding
         # effective area factor
+        # Also store the probability of detecting Edet given Etrue
         self.matrix = np.zeros((nbins_true_energy, nbins_detected_energy))
+        self.p_detected_given_true = np.zeros((nbins_true_energy, nbins_detected_energy))
+       
         for i in range(nbins_true_energy):
             for j in range(nbins_detected_energy):
                 self.matrix[i][j] = (self.dN_dt_joint[i][j] / dN_dt_true[i]) * effective_area[i] # m^2
-        
+                self.p_detected_given_true[i][j] = self.dN_dt_joint[i][j] / dN_dt_true[i] # dimensionless
+
+        # Normalise probability distribution
+        #self.p_detected_given_true = self.p_detected_given_true / sum(sum(self.p_detected_given_true))
+
         
     def show(self):
         """

@@ -10,7 +10,8 @@
 functions {
 
 #include bspline_ev.stan
-
+#include interpolate.stan
+  
   real bounded_power_law_lpdf(real E, real alpha, real N, real min_energy, real max_energy) {
 
     real norm = (1-alpha) * ( pow(max_energy, 1-alpha) - pow(min_energy, 1-alpha) ); 
@@ -19,11 +20,27 @@ functions {
       return negative_infinity();
     }
     else {
-      return log(norm * pow(E, -alpha));
+      return log(N * norm * pow(E, -alpha));
     }
 
   }
 
+  real get_Nex(real alpha, real N, real min_energy, real max_energy) {
+
+   real norm = (1-alpha) * ( pow(max_energy, 1-alpha) - pow(min_energy, 1-alpha) ); 
+
+   real gamma_fac = (gamma_q(3-alpha, min_energy/10.0) - gamma_q(3-alpha, max_energy/10.0)) * tgamma(3-alpha);
+   
+   return (10 * pow(10, 3-alpha) * norm * N * gamma_fac);
+   
+  }
+
+  real get_Aeff(real E, real maximum) {
+
+    return (10 * pow(E, 2) * exp(-E/10)) / maximum;
+
+  }
+  
 }
 
 data {
@@ -45,22 +62,25 @@ data {
   matrix[Lknots_x+p-1, Lknots_y+p-1] c; // spline coefficients 
 
   /* interpolation */
-  //int  Ngrid;
-  //vector[Ngrid] cond_prob[Nevents];
-  //vector[Ngrid]  Etrue_grid;
+  int  Ngrid;
+  vector[Ngrid] cond_prob[Nevents];
+  vector[Ngrid] Etrue_grid;
   
 }
 
 transformed data {
   
   real epsilon = 1.0e-5;
-  
+  //real N = 0.9236320123663313;
+  //real effective_area_max = 541.3411329464508;
+  real effective_area_max = 1.0;
+
 }
 
 parameters {
 
   real<lower=0, upper=5> N;
-  real<lower=1.1, upper=5> alpha;
+  real<lower=1, upper=3> alpha;
 
   /* latent true energies */
   vector<lower=min_energy, upper=max_energy>[Nevents] Etrue;
@@ -75,6 +95,7 @@ model {
   real log_prob_E;
   real Et;
   real Ed;
+  real Nex;
   
   for (i in 1:Nevents) {
     
@@ -83,6 +104,7 @@ model {
     lp[i] += bounded_power_law_lpdf(Etrue[i] | alpha, N, min_energy, max_energy);
 
     /* deal with boundary conditions */
+    /*
     if (Etrue[i] < xknots[1]+epsilon) {
       Et = xknots[1]+epsilon;
     }
@@ -102,10 +124,10 @@ model {
     else{
       Ed = Edet[i];
     }
-    
+    */
 
-    P_Edet_given_Etrue[i] = bspline_func_2d(xknots, yknots, p, c, Etrue[i], Edet[i]);
-
+    //P_Edet_given_Etrue[i] = bspline_func_2d(xknots, yknots, p, c, Etrue[i], Edet[i]);
+    P_Edet_given_Etrue[i] = interpolate(Etrue_grid, cond_prob[i], Etrue[i]);
 
     /* P(Edet | Etrue) */
     log_prob_E = P_Edet_given_Etrue[i];
@@ -115,13 +137,21 @@ model {
     else{
       lp[i] += negative_infinity();
     }
-    
 
+    /* Aeff */
+    lp[i] += log(get_Aeff(Etrue[i], effective_area_max));
+    
+    target += lp[i];
   }
 
 
-  target += log_sum_exp(lp);
+  Nex = get_Nex(alpha, N, min_energy, max_energy);
+  print("Nex: ", Nex);
+  target += -Nex;
 
-  //target += Nex;
+  /* prior */
+  alpha ~ normal(2, 1);
+  N ~ normal(1, 1);
 
 }
+
