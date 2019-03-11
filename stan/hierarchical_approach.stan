@@ -44,6 +44,11 @@ data {
  
   matrix[Lknots_x+p-1, Lknots_y+p-1] c; // spline coefficients 
 
+  /* interpolation */
+  //int  Ngrid;
+  //vector[Ngrid] cond_prob[Nevents];
+  //vector[Ngrid]  Etrue_grid;
+  
 }
 
 transformed data {
@@ -62,14 +67,20 @@ parameters {
 
 }
 
-transformed parameters {
 
+model {
+
+  vector[Nevents] lp;
   vector[Nevents] P_Edet_given_Etrue;
+  real log_prob_E;
   real Et;
   real Ed;
   
-  /* evaluate the spline */
   for (i in 1:Nevents) {
+    
+    lp[i] = 0;
+    /* spectrum */
+    lp[i] += bounded_power_law_lpdf(Etrue[i] | alpha, N, min_energy, max_energy);
 
     /* deal with boundary conditions */
     if (Etrue[i] < xknots[1]+epsilon) {
@@ -91,39 +102,26 @@ transformed parameters {
     else{
       Ed = Edet[i];
     }
-
     
-    P_Edet_given_Etrue[i] = bspline_func_2d(xknots, yknots, p, c, Et, Ed);
 
-    
-  }
-
-}
-
-model {
-
-  vector[Nevents] lp;
-  real log_prob_E;
-  
-  for (i in 1:Nevents) {
-
-    lp[i] = 0;
-    /* spectrum */
-    lp[i] += bounded_power_law_lpdf(Etrue[i] | alpha, N, min_energy, max_energy);
+    P_Edet_given_Etrue[i] = bspline_func_2d(xknots, yknots, p, c, Etrue[i], Edet[i]);
 
 
     /* P(Edet | Etrue) */
-    log_prob_E = log(P_Edet_given_Etrue[i]);
-    if (log_prob_E != negative_infinity()) {
-      if (!is_nan(log_prob_E)) {
-	lp[i] += log(P_Edet_given_Etrue[i]);
-      }
+    log_prob_E = P_Edet_given_Etrue[i];
+    if (log_prob_E != negative_infinity() && !is_nan(log_prob_E)) {
+	lp[i] += log_prob_E;
     }
-
+    else{
+      lp[i] += negative_infinity();
+    }
+    
 
   }
 
 
   target += log_sum_exp(lp);
+
+  //target += Nex;
 
 }
